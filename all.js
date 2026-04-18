@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
 async function handleLoginClick() {
     try {
         showLoading('正在連線...');
-        // 強制彈出授權視窗 (取得新 Token)
-        const token = await requestAccessToken(true);
+        // 改為不強制顯示授權視窗，方便快速通關
+        const token = await requestAccessToken(false);
         // 取得 Token 後進行後續載入
         await handleAuthFlow(token);
     } catch (err) {
@@ -132,6 +132,9 @@ async function handleAuthFlow(accessToken) {
     const email = profile.email;
     const name = profile.name || email.split('@')[0];
     console.log("User:", email, name);
+
+    // 儲存 email 以供下次無感快速登入
+    localStorage.setItem('saved_user_email', email);
 
     // 2. 讀取 Users 表確認身分
     const userRole = await checkUserPermission(email);
@@ -236,13 +239,20 @@ function requestAccessToken(forcePrompt = false) {
             }
         });
 
+        let options = {};
         if (forcePrompt) {
             // 強制顯示彈窗
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            options.prompt = 'consent';
         } else {
-            // 嘗試靜默或預設
-            tokenClient.requestAccessToken({ prompt: '' });
+            // 嘗試靜默或預設，讓 Google 自動判斷是否能跳過選擇畫面
+            options.prompt = '';
+            // 若有之前登入過的 email，直接跳過帳號選擇畫面
+            const savedEmail = localStorage.getItem('saved_user_email');
+            if (savedEmail) {
+                options.login_hint = savedEmail;
+            }
         }
+        tokenClient.requestAccessToken(options);
     });
 }
 
@@ -284,6 +294,7 @@ function handleSignOut() {
     // [新增] 清除 LocalStorage
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXP_KEY);
+    localStorage.removeItem('saved_user_email'); // 登出時清除 email，讓用戶能切換帳號
 
     currentUser = null;
     document.getElementById('user-info').classList.add('hidden');
@@ -611,6 +622,22 @@ function hideLoading() {
 function showLogin() {
     document.getElementById('login-section').classList.remove('hidden');
     document.getElementById('app-section').classList.add('hidden');
+    
+    // 調整 UI 如果是已記住的用戶
+    const savedEmail = localStorage.getItem('saved_user_email');
+    const h2 = document.querySelector('.login-card h2');
+    const p = document.querySelector('.login-card p');
+    const btnText = document.querySelector('#custom-login-btn .text');
+    
+    if (savedEmail) {
+        h2.innerHTML = '歡迎回來！ <span style="font-size:1.5rem">🍔</span>';
+        p.textContent = `安全憑證已自動更新，請繼續以 ${savedEmail} 進行點餐`;
+        btnText.textContent = '快速一鍵繼續';
+    } else {
+        h2.textContent = '請先登入';
+        p.textContent = '使用公司 Google 帳號登入以進行點餐';
+        btnText.textContent = '使用 Google 帳號登入';
+    }
 }
 
 function hideLogin() {
