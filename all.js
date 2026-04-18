@@ -38,7 +38,6 @@ const SHEETS = {
 document.addEventListener('DOMContentLoaded', () => {
     // 綁定按鈕事件
     document.getElementById('sign-out-btn').addEventListener('click', handleSignOut);
-    document.getElementById('btn-open-config').addEventListener('click', showConfigPanel);
     document.getElementById('btn-save-config').addEventListener('click', saveTodayConfig);
     document.getElementById('btn-clear-orders').addEventListener('click', clearOrders);
     document.getElementById('btn-show-orders').addEventListener('click', openOrdersModal);
@@ -345,6 +344,11 @@ async function loadAppArgs() {
 
         // 3. 渲染介面
         renderMenu(todayConfig, allMenu);
+        
+        // 4. 如果是管理員，直接利用取得的對應菜單生成設定選項
+        if (currentUser && currentUser.role === '管理員') {
+            renderAdminConfigPanel(allMenu, todayConfig);
+        }
 
         hideLoading();
         document.getElementById('app-section').classList.remove('hidden');
@@ -454,31 +458,26 @@ async function submitOrder(restaurant, foodName, price, btnElement) {
 
 // --- 管理員功能 ---
 
-async function showConfigPanel() {
-    // 1. 讀取所有可用的餐廳 (從 Menu 中取出所有唯一餐廳名)
-    // 2. 顯示 Checkbox
-    const panel = document.getElementById('admin-config-panel');
+function renderAdminConfigPanel(allMenu, todayConfig) {
     const container = document.getElementById('restaurant-checkboxes');
-    container.innerHTML = '讀取中...';
-    panel.classList.remove('hidden');
-
+    
     try {
-        const allMenu = await getAllMenu();
         const restaurants = [...new Set(allMenu.map(item => item.restaurant))];
 
         container.innerHTML = '';
         restaurants.forEach(r => {
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <label>
-                    <input type="checkbox" value="${r}" name="restaurant-select"> ${r}
-                </label>
+            const isChecked = todayConfig.includes(r) ? 'checked' : '';
+            const label = document.createElement('label');
+            label.className = 'toggle-btn';
+            label.innerHTML = `
+                <input type="checkbox" value="${r}" name="restaurant-select" ${isChecked}>
+                <span>${r}</span>
             `;
-            container.appendChild(div);
+            container.appendChild(label);
         });
 
     } catch (err) {
-        container.textContent = '載入餐廳失敗';
+        container.innerHTML = '<p class="placeholder-text">載入餐廳失敗</p>';
     }
 }
 
@@ -503,7 +502,6 @@ async function saveTodayConfig() {
         }
 
         alert('設定已儲存！');
-        document.getElementById('admin-config-panel').classList.add('hidden');
         // 重新載入介面
         loadAppArgs();
 

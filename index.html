@@ -43,15 +43,14 @@
 
             <!-- 管理員設定區塊 (僅管理員可見) -->
             <section id="admin-section" class="card hidden">
-                <h3>👨‍🍳 主廚設定 (管理員)</h3>
+                <h3>📢 管理員公告</h3>
                 <div class="admin-controls">
-                    <button id="btn-open-config" class="btn btn-secondary">設定今日餐廳</button>
                     <button id="btn-clear-orders" class="btn btn-danger">清空今日點餐</button>
                 </div>
-                <div id="admin-config-panel" class="hidden mt-3">
+                <div id="admin-config-panel" class="mt-3">
                     <h4>選擇今日開放餐廳：</h4>
                     <div id="restaurant-checkboxes" class="checkbox-group">
-                        <!-- JS 動態生成 -->
+                        <p class="placeholder-text">載入中...</p>
                     </div>
                     <button id="btn-save-config" class="btn btn-primary mt-2">儲存設定</button>
                 </div>
